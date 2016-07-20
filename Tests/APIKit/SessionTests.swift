@@ -17,36 +17,36 @@ class SessionTests: XCTestCase {
 
     func testSuccess() {
         let dictionary = ["key": "value"]
-        adapter.data = try! NSJSONSerialization.dataWithJSONObject(dictionary, options: [])
+        adapter.data = try! JSONSerialization.data(withJSONObject: dictionary, options: [])
         
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
         
         session.sendRequest(request) { response in
             switch response {
-            case .Success(let dictionary):
+            case .success(let dictionary):
                 XCTAssertEqual(dictionary["key"], "value")
 
-            case .Failure:
+            case .failure:
                 XCTFail()
             }
             
             expectation.fulfill()
         }
         
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
     }
 
     // MARK: Response error
     func testParseDataError() {
-        adapter.data = "{\"broken\": \"json}".dataUsingEncoding(NSUTF8StringEncoding, allowLossyConversion: false)
+        adapter.data = "{\"broken\": \"json}".data(using: String.Encoding.utf8, allowLossyConversion: false)
 
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
         
         session.sendRequest(request) { result in
-            if case .Failure(let error) = result,
-               case .ResponseError(let responseError as NSError) = error {
+            if case .failure(let error) = result,
+               case .responseError(let responseError as NSError) = error {
                 XCTAssertEqual(responseError.domain, NSCocoaErrorDomain)
                 XCTAssertEqual(responseError.code, 3840)
             } else {
@@ -56,19 +56,19 @@ class SessionTests: XCTestCase {
             expectation.fulfill()
         }
         
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
     }
 
     func testUnacceptableStatusCodeError() {
-        adapter.URLResponse = NSHTTPURLResponse(URL: NSURL(), statusCode: 400, HTTPVersion: nil, headerFields: nil)
+        adapter.URLResponse = HTTPURLResponse(url: URL(string: "")!, statusCode: 400, httpVersion: nil, headerFields: nil)
 
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
         
         session.sendRequest(request) { result in
-            if case .Failure(let error) = result,
-               case .ResponseError(let responseError as ResponseError) = error,
-               case .UnacceptableStatusCode(let statusCode) = responseError {
+            if case .failure(let error) = result,
+               case .responseError(let responseError as ResponseError) = error,
+               case .unacceptableStatusCode(let statusCode) = responseError {
                 XCTAssertEqual(statusCode, 400)
             } else {
                 XCTFail()
@@ -77,19 +77,19 @@ class SessionTests: XCTestCase {
             expectation.fulfill()
         }
         
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
     }
 
     func testNonHTTPURLResponseError() {
-        adapter.URLResponse = NSURLResponse()
+        adapter.URLResponse = URLResponse()
 
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
         
         session.sendRequest(request) { result in
-            if case .Failure(let error) = result,
-               case .ResponseError(let responseError as ResponseError) = error,
-               case .NonHTTPURLResponse(let URLResponse) = responseError {
+            if case .failure(let error) = result,
+               case .responseError(let responseError as ResponseError) = error,
+               case .nonHTTPURLResponse(let URLResponse) = responseError {
                 XCTAssert(URLResponse === self.adapter.URLResponse)
             } else {
                 XCTFail()
@@ -98,21 +98,21 @@ class SessionTests: XCTestCase {
             expectation.fulfill()
         }
         
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
     }
 
     // MARK: Request error
     func testRequestError() {
-        struct Error: ErrorType {}
+        struct Error: ErrorProtocol {}
 
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest() { URLRequest in
             throw Error()
         }
         
         session.sendRequest(request) { result in
-            if case .Failure(let error) = result,
-               case .RequestError(let requestError) = error {
+            if case .failure(let error) = result,
+               case .requestError(let requestError) = error {
                 XCTAssert(requestError is Error)
             } else {
                 XCTFail()
@@ -121,18 +121,18 @@ class SessionTests: XCTestCase {
             expectation.fulfill()
         }
         
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
 
     }
 
     // MARK: Cancel
     func testCancel() {
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
         
         session.sendRequest(request) { result in
-            if case .Failure(let error) = result,
-               case .ConnectionError(let connectionError as NSError) = error {
+            if case .failure(let error) = result,
+               case .connectionError(let connectionError as NSError) = error {
                 XCTAssertEqual(connectionError.code, 0)
             } else {
                 XCTFail()
@@ -143,26 +143,26 @@ class SessionTests: XCTestCase {
         
         session.cancelRequest(TestRequest.self)
         
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
     }
 
     func testCancelFilter() {
-        let successExpectation = expectationWithDescription("wait for response")
+        let successExpectation = expectation(description: "wait for response")
         let successRequest = TestRequest(path: "/success")
 
         session.sendRequest(successRequest) { result in
-            if case .Failure = result {
+            if case .failure = result {
                 XCTFail()
             }
 
             successExpectation.fulfill()
         }
 
-        let failureExpectation = expectationWithDescription("wait for response")
+        let failureExpectation = expectation(description: "wait for response")
         let failureRequest = TestRequest(path: "/failure")
 
         session.sendRequest(failureRequest) { result in
-            if case .Success = result {
+            if case .success = result {
                 XCTFail()
             }
 
@@ -173,14 +173,14 @@ class SessionTests: XCTestCase {
             return request.path == failureRequest.path
         }
         
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
     }
 
     struct AnotherTestRequest: RequestType {
         typealias Response = Void
 
-        var baseURL: NSURL {
-            return NSURL(string: "https://example.com")!
+        var baseURL: URL {
+            return URL(string: "https://example.com")!
         }
 
         var method: HTTPMethod {
@@ -191,28 +191,28 @@ class SessionTests: XCTestCase {
             return "/"
         }
 
-        func responseFromObject(object: AnyObject, URLResponse: NSHTTPURLResponse) throws -> Response {
+        func responseFromObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> Response {
             return ()
         }
     }
 
     func testCancelOtherRequestType() {
-        let successExpectation = expectationWithDescription("wait for response")
+        let successExpectation = expectation(description: "wait for response")
         let successRequest = AnotherTestRequest()
 
         session.sendRequest(successRequest) { result in
-            if case .Failure = result {
+            if case .failure = result {
                 XCTFail()
             }
 
             successExpectation.fulfill()
         }
 
-        let failureExpectation = expectationWithDescription("wait for response")
+        let failureExpectation = expectation(description: "wait for response")
         let failureRequest = TestRequest()
 
         session.sendRequest(failureRequest) { result in
-            if case .Success = result {
+            if case .success = result {
                 XCTFail()
             }
 
@@ -221,7 +221,7 @@ class SessionTests: XCTestCase {
         
         session.cancelRequest(TestRequest.self)
 
-        waitForExpectationsWithTimeout(1.0, handler: nil)
+        waitForExpectations(timeout: 1.0, handler: nil)
     }
 
     // MARK: Class methods
@@ -239,12 +239,12 @@ class SessionTests: XCTestCase {
                 return testSesssion
             }
 
-            private override func sendRequest<Request : RequestType>(request: Request, callbackQueue: CallbackQueue?, handler: (Result<Request.Response, SessionTaskError>) -> Void) -> SessionTaskType? {
+            private override func sendRequest<Request : RequestType>(_ request: Request, callbackQueue: CallbackQueue?, handler: (Result<Request.Response, SessionTaskError>) -> Void) -> SessionTaskType? {
                 functionCallFlags[(#function)] = true
                 return super.sendRequest(request)
             }
 
-            private override func cancelRequest<Request : RequestType>(requestType: Request.Type, passingTest test: Request -> Bool) {
+            private override func cancelRequest<Request : RequestType>(_ requestType: Request.Type, passingTest test: (Request) -> Bool) {
                 functionCallFlags[(#function)] = true
             }
         }

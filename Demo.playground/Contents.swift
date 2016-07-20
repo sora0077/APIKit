@@ -1,8 +1,8 @@
-import XCPlayground
+import PlaygroundSupport
 import UIKit
 import APIKit
 
-XCPlaygroundPage.currentPage.needsIndefiniteExecution = true
+PlaygroundPage.current.needsIndefiniteExecution = true
 
 //: Step 1: Define request protocol
 protocol GitHubRequestType: RequestType {
@@ -10,8 +10,8 @@ protocol GitHubRequestType: RequestType {
 }
 
 extension GitHubRequestType {
-    var baseURL: NSURL {
-        return NSURL(string: "https://api.github.com")!
+    var baseURL: URL {
+        return URL(string: "https://api.github.com")!
     }
 }
 
@@ -25,7 +25,7 @@ struct RateLimit {
             return nil
         }
 
-        guard let resetDateString = dictionary["rate"]?["reset"] as? NSTimeInterval else {
+        guard let resetDateString = dictionary["rate"]?["reset"] as? TimeInterval else {
             return nil
         }
 
@@ -47,10 +47,10 @@ struct GetRateLimitRequest: GitHubRequestType {
         return "/rate_limit"
     }
 
-    func responseFromObject(object: AnyObject, URLResponse: NSHTTPURLResponse) throws -> Response {
+    func responseFromObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> Response {
         guard let dictionary = object as? [String: AnyObject],
               let rateLimit = RateLimit(dictionary: dictionary) else {
-            throw ResponseError.UnexpectedObject(object)
+            throw ResponseError.unexpectedObject(object)
         }
 
         return rateLimit
@@ -62,11 +62,11 @@ let request = GetRateLimitRequest()
 
 Session.sendRequest(request) { result in
     switch result {
-    case .Success(let rateLimit):
+    case .success(let rateLimit):
         print("count: \(rateLimit.count)")
         print("reset: \(rateLimit.resetDate)")
 
-    case .Failure(let error):
+    case .failure(let error):
         print("error: \(error)")
     }
 }

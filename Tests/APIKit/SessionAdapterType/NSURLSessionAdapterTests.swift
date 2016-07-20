@@ -9,7 +9,7 @@ class NSURLSessionAdapterTests: XCTestCase {
     override func setUp() {
         super.setUp()
 
-        let configuration = NSURLSessionConfiguration.defaultSessionConfiguration()
+        let configuration = URLSessionConfiguration.default
         let adapter = NSURLSessionAdapter(configuration: configuration)
         session = Session(adapter: adapter)
     }
@@ -22,52 +22,52 @@ class NSURLSessionAdapterTests: XCTestCase {
     // MARK: - integration tests
     func testSuccess() {
         let dictionary = ["key": "value"]
-        let data = try! NSJSONSerialization.dataWithJSONObject(dictionary, options: [])
+        let data = try! JSONSerialization.data(withJSONObject: dictionary, options: [])
         
-        OHHTTPStubs.stubRequestsPassingTest({ request in
+        OHHTTPStubs.stubRequests(passingTest: { request in
             return true
         }, withStubResponse: { request in
             return OHHTTPStubsResponse(data: data, statusCode: 200, headers: nil)
         })
         
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
         
         session.sendRequest(request) { response in
             switch response {
-            case .Success(let dictionary):
+            case .success(let dictionary):
                 XCTAssertEqual(dictionary["key"], "value")
 
-            case .Failure:
+            case .failure:
                 XCTFail()
             }
             
             expectation.fulfill()
         }
         
-        waitForExpectationsWithTimeout(10.0, handler: nil)
+        waitForExpectations(timeout: 10.0, handler: nil)
     }
     
     func testConnectionError() {
         let error = NSError(domain: NSURLErrorDomain, code: NSURLErrorTimedOut, userInfo: nil)
         
-        OHHTTPStubs.stubRequestsPassingTest({ request in
+        OHHTTPStubs.stubRequests(passingTest: { request in
             return true
         }, withStubResponse: { request in
             return OHHTTPStubsResponse(error: error)
         })
         
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
 
         session.sendRequest(request) { response in
             switch response {
-            case .Success:
+            case .success:
                 XCTFail()
                 
-            case .Failure(let error):
+            case .failure(let error):
                 switch error {
-                case .ConnectionError(let error as NSError):
+                case .connectionError(let error as NSError):
                     XCTAssertEqual(error.domain, NSURLErrorDomain)
 
                 default:
@@ -78,24 +78,24 @@ class NSURLSessionAdapterTests: XCTestCase {
             expectation.fulfill()
         }
         
-        waitForExpectationsWithTimeout(10.0, handler: nil)
+        waitForExpectations(timeout: 10.0, handler: nil)
     }
 
     func testCancel() {
-        let data = try! NSJSONSerialization.dataWithJSONObject([:], options: [])
+        let data = try! JSONSerialization.data(withJSONObject: [:], options: [])
         
-        OHHTTPStubs.stubRequestsPassingTest({ request in
+        OHHTTPStubs.stubRequests(passingTest: { request in
             return true
         }, withStubResponse: { request in
             return OHHTTPStubsResponse(data: data, statusCode: 200, headers: nil).responseTime(1.0)
         })
         
-        let expectation = expectationWithDescription("wait for response")
+        let expectation = self.expectation(description: "wait for response")
         let request = TestRequest()
 
         session.sendRequest(request) { result in
-            guard case .Failure(let error) = result,
-                  case .ConnectionError(let connectionError as NSError) = error else {
+            guard case .failure(let error) = result,
+                  case .connectionError(let connectionError as NSError) = error else {
                 XCTFail()
                 return
             }
@@ -105,10 +105,10 @@ class NSURLSessionAdapterTests: XCTestCase {
             expectation.fulfill()
         }
 
-        dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.main.async {
             self.session.cancelRequest(TestRequest.self)
         }
 
-        waitForExpectationsWithTimeout(10.0, handler: nil)
+        waitForExpectations(timeout: 10.0, handler: nil)
     }
 }

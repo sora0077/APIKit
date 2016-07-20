@@ -6,10 +6,10 @@ public struct FormURLEncodedBodyParameters: BodyParametersType {
     public let form: [String: AnyObject]
 
     /// The string encoding of the serialized form.
-    public let encoding: NSStringEncoding
+    public let encoding: String.Encoding
 
     /// Returns `FormURLEncodedBodyParameters` that is initialized with form object and encoding.
-    public init(formObject: [String: AnyObject], encoding: NSStringEncoding = NSUTF8StringEncoding) {
+    public init(formObject: [String: AnyObject], encoding: String.Encoding = String.Encoding.utf8) {
         self.form = formObject
         self.encoding = encoding
     }
@@ -24,6 +24,6 @@ public struct FormURLEncodedBodyParameters: BodyParametersType {
     /// Builds `RequestBodyEntity.Data` that represents `form`.
     /// - Throws: `URLEncodedSerialization.Error` if `URLEncodedSerialization` fails to serialize form object.
     public func buildEntity() throws -> RequestBodyEntity {
-        return .Data(try URLEncodedSerialization.dataFromObject(form, encoding: encoding))
+        return .data(try URLEncodedSerialization.dataFromObject(form, encoding: encoding))
     }
 }

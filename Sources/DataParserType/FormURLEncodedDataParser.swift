@@ -2,15 +2,15 @@ import Foundation
 
 /// `FormURLEncodedDataParser` parses form URL encoded response data.
 public class FormURLEncodedDataParser: DataParserType {
-    public enum Error: ErrorType {
-        case CannotGetStringFromData(NSData)
+    public enum Error: ErrorProtocol {
+        case cannotGetStringFromData(Data)
     }
 
     /// The string encoding of the data.
-    public let encoding: NSStringEncoding
+    public let encoding: String.Encoding
 
     /// Returns `FormURLEncodedDataParser` with the string encoding.
-    public init(encoding: NSStringEncoding) {
+    public init(encoding: String.Encoding) {
         self.encoding = encoding
     }
 
@@ -23,12 +23,12 @@ public class FormURLEncodedDataParser: DataParserType {
 
     /// Return `AnyObject` that expresses structure of response.
     /// - Throws: `FormURLEncodedDataParser.Error` when the parser fails to initialize `NSString` from `NSData`.
-    public func parseData(data: NSData) throws -> AnyObject {
-        guard let string = NSString(data: data, encoding: encoding) as? String else {
-            throw Error.CannotGetStringFromData(data)
+    public func parseData(_ data: Data) throws -> AnyObject {
+        guard let string = NSString(data: data, encoding: encoding.rawValue) as? String else {
+            throw Error.cannotGetStringFromData(data)
         }
 
-        let components = NSURLComponents()
+        var components = URLComponents()
         components.percentEncodedQuery = string
 
         let queryItems = components.queryItems ?? []

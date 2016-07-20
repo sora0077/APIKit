@@ -6,10 +6,10 @@ public struct JSONBodyParameters: BodyParametersType {
     public let JSONObject: AnyObject
 
     /// The writing options for serialization.
-    public let writingOptions: NSJSONWritingOptions
+    public let writingOptions: JSONSerialization.WritingOptions
 
     /// Returns `JSONBodyParameters` that is initialized with JSON object and writing options.
-    public init(JSONObject: AnyObject, writingOptions: NSJSONWritingOptions = []) {
+    public init(JSONObject: AnyObject, writingOptions: JSONSerialization.WritingOptions = []) {
         self.JSONObject = JSONObject
         self.writingOptions = writingOptions
     }
@@ -25,10 +25,10 @@ public struct JSONBodyParameters: BodyParametersType {
     /// - Throws: `NSError` if `NSJSONSerialization` fails to serialize `JSONObject`.
     public func buildEntity() throws -> RequestBodyEntity {
         // If isValidJSONObject(_:) is false, dataWithJSONObject(_:options:) throws NSException.
-        guard NSJSONSerialization.isValidJSONObject(JSONObject) else {
+        guard JSONSerialization.isValidJSONObject(JSONObject) else {
             throw NSError(domain: NSCocoaErrorDomain, code: 3840, userInfo: nil)
         }
 
-        return .Data(try NSJSONSerialization.dataWithJSONObject(JSONObject, options: writingOptions))
+        return .data(try JSONSerialization.data(withJSONObject: JSONObject, options: writingOptions))
     }
 }

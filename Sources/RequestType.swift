@@ -13,7 +13,7 @@ public protocol RequestType {
     associatedtype Response
 
     /// The base URL.
-    var baseURL: NSURL { get }
+    var baseURL: URL { get }
 
     /// The HTTP request method.
     var method: HTTPMethod { get }
@@ -46,19 +46,19 @@ public protocol RequestType {
     /// Intercepts `NSURLRequest` which is created by `RequestType.buildURLRequest()`. If an error is
     /// thrown in this method, the result of `Session.sendRequest()` turns `.Failure(.RequestError(error))`.
     /// - Throws: `ErrorType`
-    func interceptURLRequest(URLRequest: NSMutableURLRequest) throws -> NSMutableURLRequest
+    func interceptURLRequest(_ URLRequest: NSMutableURLRequest) throws -> NSMutableURLRequest
 
     /// Intercepts response `AnyObject` and `NSHTTPURLResponse`. If an error is thrown in this method,
     /// the result of `Session.sendRequest()` turns `.Failure(.ResponseError(error))`.
     /// The default implementation of this method is provided to throw `RequestError.UnacceptableStatusCode`
     /// if the HTTP status code is not in `200..<300`.
     /// - Throws: `ErrorType`
-    func interceptObject(object: AnyObject, URLResponse: NSHTTPURLResponse) throws -> AnyObject
+    func interceptObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> AnyObject
 
     /// Build `Response` instance from raw response object. This method is called after
     /// `interceptObject(:URLResponse:)` if it does not throw any error.
     /// - Throws: `ErrorType`
-    func responseFromObject(object: AnyObject, URLResponse: NSHTTPURLResponse) throws -> Response
+    func responseFromObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> Response
 }
 
 public extension RequestType {
@@ -67,7 +67,7 @@ public extension RequestType {
     }
 
     public var queryParameters: [String: AnyObject]? {
-        guard let parameters = parameters as? [String: AnyObject] where method.prefersQueryParameters else {
+        guard let parameters = parameters as? [String: AnyObject], method.prefersQueryParameters else {
             return nil
         }
 
@@ -75,7 +75,7 @@ public extension RequestType {
     }
 
     public var bodyParameters: BodyParametersType? {
-        guard let parameters = parameters where !method.prefersQueryParameters else {
+        guard let parameters = parameters, !method.prefersQueryParameters else {
             return nil
         }
 
@@ -90,24 +90,24 @@ public extension RequestType {
         return JSONDataParser(readingOptions: [])
     }
 
-    public func interceptURLRequest(URLRequest: NSMutableURLRequest) throws -> NSMutableURLRequest {
+    public func interceptURLRequest(_ URLRequest: NSMutableURLRequest) throws -> NSMutableURLRequest {
         return URLRequest
     }
 
-    public func interceptObject(object: AnyObject, URLResponse: NSHTTPURLResponse) throws -> AnyObject {
+    public func interceptObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> AnyObject {
         guard (200..<300).contains(URLResponse.statusCode) else {
-            throw ResponseError.UnacceptableStatusCode(URLResponse.statusCode)
+            throw ResponseError.unacceptableStatusCode(URLResponse.statusCode)
         }
         return object
     }
 
     /// Builds `NSURLRequest` from properties of `self`.
     /// - Throws: `RequestError`, `ErrorType`
-    public func buildURLRequest() throws -> NSURLRequest {
-        let URL = path.isEmpty ? baseURL : baseURL.URLByAppendingPathComponent(path)
+    public func buildURLRequest() throws -> URLRequest {
+        let URL = path.isEmpty ? baseURL : try! baseURL.appendingPathComponent(path)
         #if swift(>=2.3)
-            guard let unwrapped = URL, components = NSURLComponents(URL: unwrapped, resolvingAgainstBaseURL: true) else {
-                throw RequestError.InvalidBaseURL(baseURL)
+            guard var components = URLComponents(url: URL, resolvingAgainstBaseURL: true) else {
+                throw RequestError.invalidBaseURL(baseURL)
             }
         #else
             guard let components = NSURLComponents(URL: URL, resolvingAgainstBaseURL: true) else {
@@ -116,8 +116,8 @@ public extension RequestType {
         #endif
 
         let URLRequest = NSMutableURLRequest()
-
-        if let queryParameters = queryParameters where !queryParameters.isEmpty {
+        
+        if let queryParameters = queryParameters, !queryParameters.isEmpty {
             components.percentEncodedQuery = URLEncodedSerialization.stringFromDictionary(queryParameters)
         }
 
@@ -125,28 +125,28 @@ public extension RequestType {
             URLRequest.setValue(bodyParameters.contentType, forHTTPHeaderField: "Content-Type")
 
             switch try bodyParameters.buildEntity() {
-            case .Data(let data):
-                URLRequest.HTTPBody = data
+            case .data(let data):
+                URLRequest.httpBody = data
 
-            case .InputStream(let inputStream):
-                URLRequest.HTTPBodyStream = inputStream
+            case .inputStream(let inputStream):
+                URLRequest.httpBodyStream = inputStream
             }
         }
 
-        URLRequest.URL = components.URL
-        URLRequest.HTTPMethod = method.rawValue
+        URLRequest.url = components.url
+        URLRequest.httpMethod = method.rawValue
         URLRequest.setValue(dataParser.contentType, forHTTPHeaderField: "Accept")
 
         headerFields.forEach { key, value in
             URLRequest.setValue(value, forHTTPHeaderField: key)
         }
 
-        return (try interceptURLRequest(URLRequest))
+        return (try interceptURLRequest(URLRequest)) as URLRequest
     }
 
     /// Builds `Response` from response `NSData`.
     /// - Throws: `ResponseError`, `ErrorType`
-    public func parseData(data: NSData, URLResponse: NSHTTPURLResponse) throws -> Response {
+    public func parseData(_ data: Data, URLResponse: HTTPURLResponse) throws -> Response {
         let parsedObject = try dataParser.parseData(data)
         let passedObject = try interceptObject(parsedObject, URLResponse: URLResponse)
         return try responseFromObject(passedObject, URLResponse: URLResponse)

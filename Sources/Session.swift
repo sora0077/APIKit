@@ -14,14 +14,14 @@ public class Session {
     /// Returns `Session` instance that is initialized with `adapter`.
     /// - parameter adapter: The adapter that connects lower level backend with Session interface.
     /// - parameter callbackQueue: The default callback queue for `sendRequest(_:handler:)`.
-    public init(adapter: SessionAdapterType, callbackQueue: CallbackQueue = .Main) {
+    public init(adapter: SessionAdapterType, callbackQueue: CallbackQueue = .main) {
         self.adapter = adapter
         self.callbackQueue = callbackQueue
     }
 
     // Shared session for class methods
     private static let privateSharedSession: Session = {
-        let configuration = NSURLSessionConfiguration.defaultSessionConfiguration()
+        let configuration = URLSessionConfiguration.default
         let adapter = NSURLSessionAdapter(configuration: configuration)
         return Session(adapter: adapter)
     }()
@@ -36,12 +36,13 @@ public class Session {
     /// - parameter callbackQueue: The queue where the handler runs. If this parameters is `nil`, default `callbackQueue` of `Session` will be used.
     /// - parameter handler: The closure that receives result of the request.
     /// - returns: The new session task.
-    public class func sendRequest<Request: RequestType>(request: Request, callbackQueue: CallbackQueue? = nil, handler: (Result<Request.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTaskType? {
+    @discardableResult
+    public class func sendRequest<Request: RequestType>(_ request: Request, callbackQueue: CallbackQueue? = nil, handler: (Result<Request.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTaskType? {
         return sharedSession.sendRequest(request, callbackQueue: callbackQueue, handler: handler)
     }
 
     /// Calls `cancelRequest(_:passingTest:)` of `sharedSession`.
-    public class func cancelRequest<Request: RequestType>(requestType: Request.Type, passingTest test: Request -> Bool = { _ in true }) {
+    public class func cancelRequest<Request: RequestType>(_ requestType: Request.Type, passingTest test: (Request) -> Bool = { _ in true }) {
         sharedSession.cancelRequest(requestType, passingTest: test)
     }
 
@@ -53,15 +54,16 @@ public class Session {
     /// - parameter callbackQueue: The queue where the handler runs. If this parameters is `nil`, default `callbackQueue` of `Session` will be used.
     /// - parameter handler: The closure that receives result of the request.
     /// - returns: The new session task.
-    public func sendRequest<Request: RequestType>(request: Request, callbackQueue: CallbackQueue? = nil, handler: (Result<Request.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTaskType? {
+    @discardableResult
+    public func sendRequest<Request: RequestType>(_ request: Request, callbackQueue: CallbackQueue? = nil, handler: (Result<Request.Response, SessionTaskError>) -> Void = { _ in }) -> SessionTaskType? {
         let callbackQueue = callbackQueue ?? self.callbackQueue
 
-        let URLRequest: NSURLRequest
+        let URLRequest: Foundation.URLRequest
         do {
             URLRequest = try request.buildURLRequest()
         } catch {
             callbackQueue.execute {
-                handler(.Failure(.RequestError(error)))
+                handler(.failure(.requestError(error)))
             }
             return nil
         }
@@ -71,17 +73,17 @@ public class Session {
 
             switch (data, URLResponse, error) {
             case (_, _, let error?):
-                result = .Failure(.ConnectionError(error))
+                result = .failure(.connectionError(error))
 
-            case (let data?, let URLResponse as NSHTTPURLResponse, _):
+            case (let data?, let URLResponse as HTTPURLResponse, _):
                 do {
-                    result = .Success(try request.parseData(data, URLResponse: URLResponse))
+                    result = .success(try request.parseData(data, URLResponse: URLResponse))
                 } catch {
-                    result = .Failure(.ResponseError(error))
+                    result = .failure(.responseError(error))
                 }
 
             default:
-                result = .Failure(.ResponseError(ResponseError.NonHTTPURLResponse(URLResponse)))
+                result = .failure(.responseError(ResponseError.nonHTTPURLResponse(URLResponse)))
             }
 
             callbackQueue.execute {
@@ -98,7 +100,7 @@ public class Session {
     /// Cancels requests that passes the test.
     /// - parameter requestType: The request type to cancel.
     /// - parameter test: The test closure that determines if a request should be cancelled or not.
-    public func cancelRequest<Request: RequestType>(requestType: Request.Type, passingTest test: Request -> Bool = { _ in true }) {
+    public func cancelRequest<Request: RequestType>(_ requestType: Request.Type, passingTest test: (Request) -> Bool = { _ in true }) {
         adapter.getTasksWithHandler { [weak self] tasks in
             return tasks
                 .filter { task in
@@ -112,11 +114,11 @@ public class Session {
         }
     }
 
-    private func setRequest<Request: RequestType>(request: Request, forTask task: SessionTaskType) {
+    private func setRequest<Request: RequestType>(_ request: Request, forTask task: SessionTaskType) {
         objc_setAssociatedObject(task, &taskRequestKey, Box(request), .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
 
-    private func requestForTask<Request: RequestType>(task: SessionTaskType) -> Request? {
+    private func requestForTask<Request: RequestType>(_ task: SessionTaskType) -> Request? {
         return (objc_getAssociatedObject(task, &taskRequestKey) as? Box<Request>)?.value
     }
 }
