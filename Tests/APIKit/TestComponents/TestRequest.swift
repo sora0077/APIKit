@@ -26,11 +26,11 @@ struct TestRequest: RequestType {
     let headerFields: [String: String]
     let interceptURLRequest: (URLRequest) throws -> URLRequest
 
-    func interceptURLRequest(_ URLRequest: URLRequest) throws -> URLRequest {
-        return try interceptURLRequest(URLRequest)
+    func intercept(urlRequest: URLRequest) throws -> URLRequest {
+        return try interceptURLRequest(urlRequest)
     }
 
-    func responseFromObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> Response {
+    func response(from object: AnyObject, urlResponse: HTTPURLResponse) throws -> Response {
         return object
     }
 }

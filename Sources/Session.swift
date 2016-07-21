@@ -77,7 +77,7 @@ public class Session {
 
             case (let data?, let URLResponse as HTTPURLResponse, _):
                 do {
-                    result = .success(try request.parseData(data, URLResponse: URLResponse))
+                    result = .success(try request.parseData(data, urlResponse: URLResponse))
                 } catch {
                     result = .failure(.responseError(error))
                 }

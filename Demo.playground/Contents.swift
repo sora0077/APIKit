@@ -47,7 +47,7 @@ struct GetRateLimitRequest: GitHubRequestType {
         return "/rate_limit"
     }
 
-    func responseFromObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> Response {
+    func response(from object: AnyObject, urlResponse: HTTPURLResponse) throws -> Response {
         guard let dictionary = object as? [String: AnyObject],
               let rateLimit = RateLimit(dictionary: dictionary) else {
             throw ResponseError.unexpectedObject(object)

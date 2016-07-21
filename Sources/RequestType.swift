@@ -46,19 +46,19 @@ public protocol RequestType {
     /// Intercepts `URLRequest` which is created by `RequestType.buildURLRequest()`. If an error is
     /// thrown in this method, the result of `Session.sendRequest()` turns `.Failure(.RequestError(error))`.
     /// - Throws: `ErrorType`
-    func interceptURLRequest(_ URLRequest: URLRequest) throws -> URLRequest
+    func intercept(urlRequest: URLRequest) throws -> URLRequest
 
     /// Intercepts response `AnyObject` and `HTTPURLResponse`. If an error is thrown in this method,
     /// the result of `Session.sendRequest()` turns `.Failure(.ResponseError(error))`.
     /// The default implementation of this method is provided to throw `RequestError.UnacceptableStatusCode`
     /// if the HTTP status code is not in `200..<300`.
     /// - Throws: `ErrorType`
-    func interceptObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> AnyObject
+    func intercept(object: AnyObject, urlResponse: HTTPURLResponse) throws -> AnyObject
 
     /// Build `Response` instance from raw response object. This method is called after
     /// `interceptObject(:URLResponse:)` if it does not throw any error.
     /// - Throws: `ErrorType`
-    func responseFromObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> Response
+    func response(from object: AnyObject, urlResponse: HTTPURLResponse) throws -> Response
 }
 
 public extension RequestType {
@@ -90,13 +90,13 @@ public extension RequestType {
         return JSONDataParser(readingOptions: [])
     }
 
-    public func interceptURLRequest(_ URLRequest: URLRequest) throws -> URLRequest {
-        return URLRequest
+    public func intercept(urlRequest: URLRequest) throws -> URLRequest {
+        return urlRequest
     }
 
-    public func interceptObject(_ object: AnyObject, URLResponse: HTTPURLResponse) throws -> AnyObject {
-        guard (200..<300).contains(URLResponse.statusCode) else {
-            throw ResponseError.unacceptableStatusCode(URLResponse.statusCode)
+    public func intercept(object: AnyObject, urlResponse: HTTPURLResponse) throws -> AnyObject {
+        guard (200..<300).contains(urlResponse.statusCode) else {
+            throw ResponseError.unacceptableStatusCode(urlResponse.statusCode)
         }
         return object
     }
@@ -135,14 +135,14 @@ public extension RequestType {
             URLRequest.setValue(value, forHTTPHeaderField: key)
         }
 
-        return try interceptURLRequest(URLRequest)
+        return try intercept(urlRequest: URLRequest)
     }
 
     /// Builds `Response` from response `Data`.
     /// - Throws: `ResponseError`, `ErrorType`
-    public func parseData(_ data: Data, URLResponse: HTTPURLResponse) throws -> Response {
+    public func parseData(_ data: Data, urlResponse: HTTPURLResponse) throws -> Response {
         let parsedObject = try dataParser.parseData(data)
-        let passedObject = try interceptObject(parsedObject, URLResponse: URLResponse)
-        return try responseFromObject(passedObject, URLResponse: URLResponse)
+        let passedObject = try intercept(object: parsedObject, urlResponse: urlResponse)
+        return try response(from: passedObject, urlResponse: urlResponse)
     }
 }
