@@ -7,15 +7,15 @@ extension URLSessionTask: SessionTaskType {
 private var dataTaskResponseBufferKey = 0
 private var taskAssociatedObjectCompletionHandlerKey = 0
 
-/// `NSURLSessionAdapter` connects `NSURLSession` with `Session`.
+/// `NSURLSessionAdapter` connects `URLSession` with `Session`.
 ///
-/// If you want to add custom behavior of `NSURLSession` by implementing delegate methods defined in
-/// `NSURLSessionDelegate` and related protocols, define a subclass of `NSURLSessionAdapter` and implment
+/// If you want to add custom behavior of `URLSession` by implementing delegate methods defined in
+/// `URLSessionDelegate` and related protocols, define a subclass of `NSURLSessionAdapter` and implment
 /// delegate methods that you want to implement. Since `NSURLSessionAdapter` also implements delegate methods
 /// `URLSession(_:task: didCompleteWithError:)` and `URLSession(_:dataTask:didReceiveData:)`, you have to call
 /// `super` in these methods if you implement them.
 public class NSURLSessionAdapter: NSObject, SessionAdapterType, URLSessionDelegate, URLSessionTaskDelegate, URLSessionDataDelegate {
-    /// The undelying `NSURLSession` instance.
+    /// The undelying `URLSession` instance.
     public var URLSession: Foundation.URLSession!
 
     /// Returns `NSURLSessionAdapter` initialized with `NSURLSessionConfiguration`.
@@ -24,7 +24,7 @@ public class NSURLSessionAdapter: NSObject, SessionAdapterType, URLSessionDelega
         self.URLSession = Foundation.URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
     }
 
-    /// Creates `NSURLSessionDataTask` instance using `dataTaskWithRequest(_:completionHandler:)`.
+    /// Creates `URLSessionDataTask` instance using `dataTaskWithRequest(_:completionHandler:)`.
     public func createTaskWithURLRequest(_ URLRequest: Foundation.URLRequest, handler: (Data?, URLResponse?, ErrorProtocol?) -> Void) -> SessionTaskType {
         let task = URLSession.dataTask(with: URLRequest)
 
@@ -36,7 +36,7 @@ public class NSURLSessionAdapter: NSObject, SessionAdapterType, URLSessionDelega
         return task
     }
 
-    /// Aggregates `NSURLSessionTask` instances in `URLSession` using `getTasksWithCompletionHandler(_:)`.
+    /// Aggregates `URLSessionTask` instances in `URLSession` using `getTasksWithCompletionHandler(_:)`.
     public func getTasksWithHandler(_ handler: ([SessionTaskType]) -> Void) {
         URLSession.getTasksWithCompletionHandler { dataTasks, uploadTasks, downloadTasks in
             let allTasks = dataTasks as [URLSessionTask]
@@ -63,12 +63,12 @@ public class NSURLSessionAdapter: NSObject, SessionAdapterType, URLSessionDelega
         return (objc_getAssociatedObject(task, &taskAssociatedObjectCompletionHandlerKey) as? Box<(Data?, URLResponse?, NSError?) -> Void>)?.value
     }
 
-    // MARK: NSURLSessionTaskDelegate
+    // MARK: URLSessionTaskDelegate
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError connectionError: NSError?) {
         handlerForTask(task)?(bufferForTask(task).map(Data.init), task.response, connectionError)
     }
 
-    // MARK: NSURLSessionDataDelegate
+    // MARK: URLSessionDataDelegate
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         bufferForTask(dataTask)?.append(data)
     }

@@ -23,7 +23,7 @@ class FormURLEncodedBodyParametersTests: XCTestCase {
         }
     }
 
-    // NSURLComponents crashes on iOS 8.2 or earlier while escaping long CJK string.
+    // URLComponents crashes on iOS 8.2 or earlier while escaping long CJK string.
     // This test ensures that FormURLEncodedBodyParameters avoids this issue correctly.
     func testLongCJKString() {
         let key = "key"

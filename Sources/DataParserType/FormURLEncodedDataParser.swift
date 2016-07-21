@@ -22,9 +22,9 @@ public class FormURLEncodedDataParser: DataParserType {
     }
 
     /// Return `AnyObject` that expresses structure of response.
-    /// - Throws: `FormURLEncodedDataParser.Error` when the parser fails to initialize `NSString` from `NSData`.
+    /// - Throws: `FormURLEncodedDataParser.Error` when the parser fails to initialize `String` from `Data`.
     public func parseData(_ data: Data) throws -> AnyObject {
-        guard let string = NSString(data: data, encoding: encoding.rawValue) as? String else {
+        guard let string = String(data: data, encoding: encoding) else {
             throw Error.cannotGetStringFromData(data)
         }
 

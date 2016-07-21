@@ -4,10 +4,10 @@ import Result
 /// `RequestType` protocol represents a request for Web API.
 /// Following 5 items must be implemented.
 /// - `typealias Response`
-/// - `var baseURL: NSURL`
+/// - `var baseURL: URL`
 /// - `var method: HTTPMethod`
 /// - `var path: String`
-/// - `func responseFromObject(object: AnyObject, URLResponse: NSHTTPURLResponse) throws -> Response`
+/// - `func responseFromObject(object: AnyObject, URLResponse: HTTPURLResponse) throws -> Response`
 public protocol RequestType {
     /// The response type associated with the request type.
     associatedtype Response
@@ -43,12 +43,12 @@ public protocol RequestType {
     /// The parser object that states `Content-Type` to accept and parses response body.
     var dataParser: DataParserType { get }
 
-    /// Intercepts `NSURLRequest` which is created by `RequestType.buildURLRequest()`. If an error is
+    /// Intercepts `URLRequest` which is created by `RequestType.buildURLRequest()`. If an error is
     /// thrown in this method, the result of `Session.sendRequest()` turns `.Failure(.RequestError(error))`.
     /// - Throws: `ErrorType`
-    func interceptURLRequest(_ URLRequest: NSMutableURLRequest) throws -> NSMutableURLRequest
+    func interceptURLRequest(_ URLRequest: URLRequest) throws -> URLRequest
 
-    /// Intercepts response `AnyObject` and `NSHTTPURLResponse`. If an error is thrown in this method,
+    /// Intercepts response `AnyObject` and `HTTPURLResponse`. If an error is thrown in this method,
     /// the result of `Session.sendRequest()` turns `.Failure(.ResponseError(error))`.
     /// The default implementation of this method is provided to throw `RequestError.UnacceptableStatusCode`
     /// if the HTTP status code is not in `200..<300`.
@@ -90,7 +90,7 @@ public extension RequestType {
         return JSONDataParser(readingOptions: [])
     }
 
-    public func interceptURLRequest(_ URLRequest: NSMutableURLRequest) throws -> NSMutableURLRequest {
+    public func interceptURLRequest(_ URLRequest: URLRequest) throws -> URLRequest {
         return URLRequest
     }
 
@@ -101,24 +101,18 @@ public extension RequestType {
         return object
     }
 
-    /// Builds `NSURLRequest` from properties of `self`.
+    /// Builds `URLRequest` from properties of `self`.
     /// - Throws: `RequestError`, `ErrorType`
     public func buildURLRequest() throws -> URLRequest {
         let URL = path.isEmpty ? baseURL : try! baseURL.appendingPathComponent(path)
-        #if swift(>=2.3)
-            guard var components = URLComponents(url: URL, resolvingAgainstBaseURL: true) else {
-                throw RequestError.invalidBaseURL(baseURL)
-            }
-        #else
-            guard let components = NSURLComponents(URL: URL, resolvingAgainstBaseURL: true) else {
-                throw RequestError.InvalidBaseURL(baseURL)
-            }
-        #endif
-
-        let URLRequest = NSMutableURLRequest()
-        
+        guard var components = URLComponents(url: URL, resolvingAgainstBaseURL: true) else {
+            throw RequestError.invalidBaseURL(baseURL)
+        }
         if let queryParameters = queryParameters, !queryParameters.isEmpty {
             components.percentEncodedQuery = URLEncodedSerialization.stringFromDictionary(queryParameters)
+        }
+        guard var URLRequest = components.url.map({ Foundation.URLRequest(url: $0) }) else {
+            throw RequestError.invalidBaseURL(URL)
         }
 
         if let bodyParameters = bodyParameters {
@@ -141,10 +135,10 @@ public extension RequestType {
             URLRequest.setValue(value, forHTTPHeaderField: key)
         }
 
-        return (try interceptURLRequest(URLRequest)) as URLRequest
+        return try interceptURLRequest(URLRequest)
     }
 
-    /// Builds `Response` from response `NSData`.
+    /// Builds `Response` from response `Data`.
     /// - Throws: `ResponseError`, `ErrorType`
     public func parseData(_ data: Data, URLResponse: HTTPURLResponse) throws -> Response {
         let parsedObject = try dataParser.parseData(data)

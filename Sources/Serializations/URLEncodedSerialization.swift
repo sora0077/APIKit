@@ -41,7 +41,7 @@ private func unescape(_ string: String) -> String {
     return CFURLCreateStringByReplacingPercentEscapes(nil, string, nil) as String
 }
 
-/// `URLEncodedSerialization` parses `NSData` and `String` as urlencoded,
+/// `URLEncodedSerialization` parses `Data` and `String` as urlencoded,
 /// and returns dictionary that represents the data or the string.
 public final class URLEncodedSerialization {
     public enum Error: ErrorProtocol {
@@ -51,7 +51,7 @@ public final class URLEncodedSerialization {
         case invalidFormatString(String)
     }
 
-    /// Returns `[String: String]` that represents urlencoded `NSData`.
+    /// Returns `[String: String]` that represents urlencoded `Data`.
     /// - Throws: URLEncodedSerialization.Error
     public static func objectFromData(_ data: Data, encoding: String.Encoding) throws -> [String: String] {
         guard let string = String(data: data, encoding: encoding) else {
@@ -72,7 +72,7 @@ public final class URLEncodedSerialization {
         return dictionary
     }
 
-    /// Returns urlencoded `NSData` from the object.
+    /// Returns urlencoded `Data` from the object.
     /// - Throws: URLEncodedSerialization.Error
     public static func dataFromObject(_ object: AnyObject, encoding: String.Encoding) throws -> Data {
         guard let dictionary = object as? [String: AnyObject] else {
@@ -87,7 +87,7 @@ public final class URLEncodedSerialization {
         return data
     }
 
-    /// Returns urlencoded `NSData` from the string.
+    /// Returns urlencoded `Data` from the string.
     public static func stringFromDictionary(_ dictionary: [String: AnyObject]) -> String {
         let pairs = dictionary.map { key, value -> String in
             if value is NSNull {

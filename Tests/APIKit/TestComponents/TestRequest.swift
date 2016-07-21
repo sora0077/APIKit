@@ -10,7 +10,7 @@ struct TestRequest: RequestType {
     // MARK: RequestType
     typealias Response = AnyObject
 
-    init(baseURL: String = "https://example.com", path: String = "/", method: HTTPMethod = .GET, parameters: AnyObject? = [:], headerFields: [String: String] = [:], interceptURLRequest: (NSMutableURLRequest) throws -> NSMutableURLRequest = { $0 }) {
+    init(baseURL: String = "https://example.com", path: String = "/", method: HTTPMethod = .GET, parameters: AnyObject? = [:], headerFields: [String: String] = [:], interceptURLRequest: (URLRequest) throws -> URLRequest = { $0 }) {
         self.baseURL = URL(string: baseURL)!
         self.path = path
         self.method = method
@@ -24,9 +24,9 @@ struct TestRequest: RequestType {
     let path: String
     let parameters: AnyObject?
     let headerFields: [String: String]
-    let interceptURLRequest: (NSMutableURLRequest) throws -> NSMutableURLRequest
+    let interceptURLRequest: (URLRequest) throws -> URLRequest
 
-    func interceptURLRequest(_ URLRequest: NSMutableURLRequest) throws -> NSMutableURLRequest {
+    func interceptURLRequest(_ URLRequest: URLRequest) throws -> URLRequest {
         return try interceptURLRequest(URLRequest)
     }
 

@@ -3,7 +3,7 @@ import XCTest
 import APIKit
 
 class URLEncodedSerializationTests: XCTestCase {
-    // MARK: NSData -> AnyObject
+    // MARK: Data -> AnyObject
     func testObjectFromData() {
         let data = "key1=value1&key2=value2".data(using: String.Encoding.utf8)!
         let object = try? URLEncodedSerialization.objectFromData(data, encoding: String.Encoding.utf8)
@@ -48,11 +48,11 @@ class URLEncodedSerializationTests: XCTestCase {
         }
     }
 
-    // MARK: AnyObject -> NSData
+    // MARK: AnyObject -> Data
     func testDataFromObject() {
         let object = ["hey": "yo"] as AnyObject
         let data = try? URLEncodedSerialization.dataFromObject(object, encoding: String.Encoding.utf8)
-        let string = data.flatMap { NSString(data: $0, encoding: String.Encoding.utf8.rawValue) }
+        let string = data.flatMap { String(data: $0, encoding: String.Encoding.utf8) }
         XCTAssertEqual(string, "hey=yo")
     }
 

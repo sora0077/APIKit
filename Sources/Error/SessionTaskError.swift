@@ -2,12 +2,12 @@ import Foundation
 
 /// `SessionTaskError` represents an error that occurs while task for a request.
 public enum SessionTaskError: ErrorProtocol {
-    /// Error of `NSURLSession`.
+    /// Error of `URLSession`.
     case connectionError(ErrorProtocol)
 
-    /// Error while creating `NSURLReqeust` from `Request`.
+    /// Error while creating `URLReqeust` from `Request`.
     case requestError(ErrorProtocol)
 
-    /// Error while creating `RequestType.Response` from `(NSData, NSURLResponse)`.
+    /// Error while creating `RequestType.Response` from `(Data, URLResponse)`.
     case responseError(ErrorProtocol)
 }

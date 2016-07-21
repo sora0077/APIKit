@@ -8,12 +8,12 @@ import Foundation
 
 /// `FormURLEncodedBodyParameters` serializes array of `Part` for HTTP body and states its content type is multipart/form-data.
 public struct MultipartFormDataBodyParameters: BodyParametersType {
-    /// `EntityType` represents wheather the entity is expressed as `NSData` or `NSInputStream`.
+    /// `EntityType` represents wheather the entity is expressed as `Data` or `InputStream`.
     public enum EntityType {
-        /// Expresses the entity as `NSData`, which has faster upload speed and lager memory usage.
+        /// Expresses the entity as `Data`, which has faster upload speed and lager memory usage.
         case data
 
-        /// Expresses the entity as `NSInputStream`, which has smaller memory usage and slower upload speed.
+        /// Expresses the entity as `InputStream`, which has smaller memory usage and slower upload speed.
         case inputStream
     }
 
@@ -159,7 +159,7 @@ public extension MultipartFormDataBodyParameters {
             return bodyRange.endIndex..<(bodyRange.endIndex + footerData.count)
         }
 
-        // MARK: NSInputStream
+        // MARK: InputStream
         override var hasBytesAvailable: Bool {
             return totalSentLength < totalLength
         }
@@ -247,8 +247,8 @@ public extension MultipartFormDataBodyParameters {
             return nil
         }
 
-        // MARK: NSInputStream
-        // NOTE: NSInputStream does not have its own implementation because it is a class cluster.
+        // MARK: InputStream
+        // NOTE: InputStream does not have its own implementation because it is a class cluster.
         override var streamStatus: Stream.Status {
             return privateStreamStatus
         }

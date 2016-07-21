@@ -22,7 +22,7 @@ public struct JSONBodyParameters: BodyParametersType {
     }
 
     /// Builds `RequestBodyEntity.Data` that represents `JSONObject`.
-    /// - Throws: `NSError` if `NSJSONSerialization` fails to serialize `JSONObject`.
+    /// - Throws: `NSError` if `JSONSerialization` fails to serialize `JSONObject`.
     public func buildEntity() throws -> RequestBodyEntity {
         // If isValidJSONObject(_:) is false, dataWithJSONObject(_:options:) throws NSException.
         guard JSONSerialization.isValidJSONObject(JSONObject) else {
